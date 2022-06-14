@@ -1,9 +1,12 @@
 # TODO: tests! 
+# TODO: test if with strings
+# TODO: report error when try to access to undefined variable
 
+import sys
 import functools
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-SIGNS = "+-/*"
+SIGNS = "+-/*="
 
 def report_error(text: str):
     print("[ERROR] " + text)
@@ -116,6 +119,7 @@ class SignToken(Token):
         if type(self.left) == NumberToken:
             left_res = self.left.value
         if type(self.left) == VariableNameToken:
+            # print(vars)
             left_res = vars[self.left.value].value
         if isinstance(self.left, SignToken):
             if self.left.result == None:
@@ -140,6 +144,8 @@ class SignToken(Token):
             self.result = left_res * right_res
         if type(self) == SlashToken:
             self.result = left_res / right_res
+        if type(self) == EqualsEqualsToken:
+            self.result = left_res == right_res
             
 
 class PlusToken(SignToken):
@@ -154,12 +160,16 @@ class StarToken(SignToken):
 class SlashToken(SignToken):
     def __init__(self):
         super().__init__("/")
+class EqualsEqualsToken(SignToken):
+    def __init__(self):
+        super().__init__("==")
 
 signs_priority = {
-    StarToken: 1,
-    SlashToken: 1,
-    PlusToken: 0,
-    MinusToken: 0
+    StarToken: 2,
+    SlashToken: 2,
+    PlusToken: 1,
+    MinusToken: 1,
+    EqualsEqualsToken: 0,
 }
 
 
@@ -167,11 +177,54 @@ def run(text: str):
     global last_value
     lines = text.split("\n")
 
+
+    if_count = 0
+    if_truth = []
+    else_count = 0
+    else_truth = []
+    
     for line in lines:
+        raw_line = line
         line = line.strip()
+
+        # print("\n---")
+        # print("if_count", if_count)
+        # print("if_truth", if_truth)
+        # print("else_count", else_count)
+        # print("else_truth", else_truth)
 
         if line.startswith("//"):
             continue
+
+            
+        elif line.strip() == "if":
+            # print("-> if")
+            if last_value.type != Boolean:
+                report_error("Incorrect type for if statement!")
+                return
+            if_count += 1
+            if_truth.append(last_value.value)
+            else_count += 1
+            else_truth.append(not last_value.value)
+
+        elif line.strip() == "else":
+            # print("-> else")
+            # else_count += 1
+            # else_truth.append(not if_truth[if_count - 1])
+            if_count -= 1
+            del if_truth[if_count]
+        
+        elif line.strip() == "endif":
+            # print("-> endif")
+            else_count -= 1
+            del else_truth[else_count]
+
+        elif if_count > 0 and if_truth[if_count - 1] == False:
+            continue
+            
+        elif else_count > 0 and else_count > if_count and else_truth[else_count - 1] == False:
+            continue
+
 
         elif line.startswith("def"):
             line = line.replace("def ", "")
@@ -196,7 +249,7 @@ def run(text: str):
             last_value = vars[n]
         
         elif line.strip() == "out":
-            print(last_value.get_str())
+            print(last_value.get_str().replace("\\n", "\n"), end="")
 
         elif line.startswith("set"):
             line = line.replace("set ", "")
@@ -205,7 +258,7 @@ def run(text: str):
                 report_error("Indefined variable")
                 return
 
-            r = vars[n].parse_value(last_value)
+            r = vars[n].parse_value(last_value.value)
             if r == False:
                 report_error("??")
                 return
@@ -220,7 +273,7 @@ def run(text: str):
             last_value = vars[n]
 
         else:
-            symbols = list(line)
+            symbols = list(raw_line)
             # print(symbols)
             tokens = []
             number_str = ""
@@ -228,9 +281,13 @@ def run(text: str):
             is_str = False
             name = ""
             last_symbol_is_letter = False
-            for symbol in symbols:
+            skip = False
+            for symbol_index, symbol in enumerate(symbols):
+                if skip:
+                    skip = False
+                    continue
                 if symbol == " " and not is_str: continue
-                if symbol.isdigit():
+                if symbol.isdigit() and not is_str:
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
                         if name.lower() == "false" or name.lower() == "true":
@@ -246,7 +303,7 @@ def run(text: str):
                     number_str += symbol
                     last_symbol_is_digit = True
 
-                elif symbol in SIGNS:
+                elif symbol in SIGNS and not is_str:
                     if last_symbol_is_digit:
                         last_symbol_is_digit = False
                         tokens.append([NumberToken(int(number_str)), False])
@@ -268,6 +325,9 @@ def run(text: str):
                         tokens.append([StarToken(), False])
                     elif symbol == "/":
                         tokens.append([SlashToken(), False])
+                    elif symbol == "=" and symbols[symbol_index + 1] == "=":
+                        tokens.append([EqualsEqualsToken(), False])
+                        skip = True
                 
                 else:
                     if last_symbol_is_digit:
@@ -297,6 +357,7 @@ def run(text: str):
                     tokens.append([VariableNameToken(name), False])
 
             if len(tokens) == 1 and isinstance(tokens[0][0], ValueToken):
+                # print("Only one token detected!")
                 if type(tokens[0][0]) == NumberToken:
                     last_value = Variable(Integer, tokens[0][0].value)
                 elif type(tokens[0][0]) == StringToken:
@@ -352,7 +413,10 @@ def run(text: str):
             sign_tokens.reverse()
             for index, token in sign_tokens:
                 token.calc()
-                last_value = Variable(Integer, token.result)
+                if (token.result == True or token.result == False) and type(token.result) == type(True):
+                    last_value = Variable(Boolean, token.result)
+                else:
+                    last_value = Variable(Integer, token.result)
                 break          
 
 
@@ -367,8 +431,15 @@ text = """
 
 # run(text)
 
-f = open("test.sl", "r")
+filename = "test.sl"
+
+for arg in sys.argv:
+    if arg.endswith(".sl"):
+        filename = arg
+
+f = open(filename, "r")
 run(f.read())
+# print(vars)
 # print(vars['a'].type)
 # print(vars['a'].value)
 f.close()
