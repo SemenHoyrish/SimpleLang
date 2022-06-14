@@ -243,16 +243,25 @@ def run(text: str):
 
             sign_tokens.sort(key=functools.cmp_to_key(compare), reverse=True)
             for index, token in sign_tokens:
+                # print(tokens)
                 if not tokens[index - 1][1]:
                     token.left = tokens[index - 1][0]
                     tokens[index - 1][1] = True
                 else:
-                    token.left = tokens[index - 2][0]
+                    tmp = 2
+                    while tokens[index - tmp][1]:
+                        tmp += 1
+                    token.left = tokens[index - tmp][0]
+                    tokens[index - tmp][1] = True
                 if not tokens[index + 1][1]:
                     token.right = tokens[index + 1][0]
                     tokens[index + 1][1] = True
                 else:
-                    token.right = tokens[index + 2][0]
+                    tmp = 2
+                    while tokens[index + tmp][1]:
+                        tmp += 1
+                    token.right = tokens[index + tmp][0]
+                    tokens[index + tmp][1] = True
                 
 
                 # print(index, end="  ")
@@ -263,8 +272,8 @@ def run(text: str):
             # for index, token in sign_tokens:
             #     print(index)
             #     print(token.value)
-            #     print(token.left)
-            #     print(token.right)
+            #     print(token.left, token.left.value)
+            #     print(token.right, token.right.value)
             #     print()
 
             sign_tokens.reverse()
