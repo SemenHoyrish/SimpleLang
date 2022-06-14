@@ -1,0 +1,29 @@
+def int a
+def int b
+
+in a
+in b
+
+
+def c
+
+a + b
+set c
+
+get c
+out
+
+a + b
+out
+
+
+a == b
+if
+  out 1
+else
+  out 0
+  // OR ???
+  get 0
+  out
+end
+
