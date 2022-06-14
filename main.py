@@ -1,3 +1,5 @@
+# TODO: tests! 
+
 import functools
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -17,6 +19,10 @@ class Integer(Type):
 class String(Type):
     name: str = "string"
     default_value = ""
+
+class Boolean(Type):
+    name: str = "boolean"
+    default_value = False
 
 class Variable:
     type: Type = None
@@ -40,18 +46,39 @@ class Variable:
         elif self.type == String:
             self.value = str(value)
             return True
+        elif self.type == Boolean:
+            if str(value).lower() == "false":
+                self.value = False
+                return True
+            elif str(value).lower() == "true":
+                self.value = True
+                return True
+            return False
         else:
             return False
+
+    def get_str(self) -> str:
+        if self.type == String:
+            return self.value
+        if self.type == Integer:
+            return str(self.value)
+        if self.type == Boolean:
+            if self.value == True:
+                return "true"
+            else:
+                return "false"
+        return ""
 
 types = {
     "int": Integer,
     "str": String,
+    "bool": Boolean,
 }
 
 vars = {}
 
 
-last_value = None
+last_value = Variable(Type, None)
 
 
 class Token:
@@ -63,9 +90,17 @@ class ValueToken(Token):
     pass
 
 class NumberToken(ValueToken):
-    pass
+    def __init__(self, value):
+        super().__init__(int(value))
 class StringToken(ValueToken):
-    pass
+    def __init__(self, value):
+        super().__init__(str(value))
+class BooleanToken(ValueToken):
+    def __init__(self, value):
+        if str(value).lower() == "true":
+            super().__init__(True)
+        elif str(value).lower() == "false":
+            super().__init__(False)
 
 class VariableNameToken(Token):
     pass
@@ -158,10 +193,10 @@ def run(text: str):
                 report_error("??")
                 return
 
-            last_value = vars[n].value
+            last_value = vars[n]
         
         elif line.strip() == "out":
-            print(last_value)
+            print(last_value.get_str())
 
         elif line.startswith("set"):
             line = line.replace("set ", "")
@@ -172,7 +207,7 @@ def run(text: str):
 
             r = vars[n].parse_value(last_value)
             if r == False:
-                report_error("??/")
+                report_error("??")
                 return
 
         elif line.startswith("get"):
@@ -182,7 +217,7 @@ def run(text: str):
                 report_error("Indefined variable")
                 return
 
-            last_value = vars[n].value
+            last_value = vars[n]
 
         else:
             symbols = list(line)
@@ -198,7 +233,9 @@ def run(text: str):
                 if symbol.isdigit():
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
-                        if is_str:
+                        if name.lower() == "false" or name.lower() == "true":
+                            tokens.append([BooleanToken(name), False])
+                        elif is_str:
                             is_str = False
                             tokens.append([StringToken(name), False])
                         else:
@@ -215,7 +252,9 @@ def run(text: str):
                         tokens.append([NumberToken(int(number_str)), False])
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
-                        if is_str:
+                        if name.lower() == "false" or name.lower() == "true":
+                            tokens.append([BooleanToken(name), False])
+                        elif is_str:
                             is_str = False
                             tokens.append([StringToken(name), False])
                         else:
@@ -249,14 +288,21 @@ def run(text: str):
                 tokens.append([NumberToken(int(number_str)), False])
             if last_symbol_is_letter:
                 last_symbol_is_letter = False
-                if is_str:
+                if name.lower() == "false" or name.lower() == "true":
+                    tokens.append([BooleanToken(name), False])
+                elif is_str:
                     is_str = False
                     tokens.append([StringToken(name), False])
                 else:
                     tokens.append([VariableNameToken(name), False])
 
             if len(tokens) == 1 and isinstance(tokens[0][0], ValueToken):
-                last_value = tokens[0][0].value
+                if type(tokens[0][0]) == NumberToken:
+                    last_value = Variable(Integer, tokens[0][0].value)
+                elif type(tokens[0][0]) == StringToken:
+                    last_value = Variable(String, tokens[0][0].value)
+                elif type(tokens[0][0]) == BooleanToken:
+                    last_value = Variable(Boolean, tokens[0][0].value)
 
             sign_tokens = []
             for i, [token, used] in enumerate(tokens):
@@ -306,7 +352,7 @@ def run(text: str):
             sign_tokens.reverse()
             for index, token in sign_tokens:
                 token.calc()
-                last_value = token.result
+                last_value = Variable(Integer, token.result)
                 break          
 
 
@@ -323,5 +369,7 @@ text = """
 
 f = open("test.sl", "r")
 run(f.read())
+# print(vars['a'].type)
+# print(vars['a'].value)
 f.close()
 
