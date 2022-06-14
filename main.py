@@ -1,11 +1,4 @@
-
-
-from ast import Num
 import functools
-from traceback import print_tb
-from turtle import left
-from winsound import PlaySound
-
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SIGNS = "+-/*"
@@ -20,6 +13,10 @@ class Type:
 class Integer(Type):
     name: str = "integer"
     default_value = 0
+
+class String(Type):
+    name: str = "string"
+    default_value = ""
 
 class Variable:
     type: Type = None
@@ -40,11 +37,15 @@ class Variable:
             except:
                 report_error("Incorrect value type")
                 return False
+        elif self.type == String:
+            self.value = str(value)
+            return True
         else:
             return False
 
 types = {
     "int": Integer,
+    "str": String,
 }
 
 vars = {}
@@ -58,7 +59,12 @@ class Token:
     def __init__(self, value):
         self.value = value
 
-class NumberToken(Token):
+class ValueToken(Token):
+    pass
+
+class NumberToken(ValueToken):
+    pass
+class StringToken(ValueToken):
     pass
 
 class VariableNameToken(Token):
@@ -123,6 +129,7 @@ signs_priority = {
 
 
 def run(text: str):
+    global last_value
     lines = text.split("\n")
 
     for line in lines:
@@ -183,14 +190,19 @@ def run(text: str):
             tokens = []
             number_str = ""
             last_symbol_is_digit = False
-            var_name = ""
+            is_str = False
+            name = ""
             last_symbol_is_letter = False
             for symbol in symbols:
-                if symbol == " ": continue    
+                if symbol == " " and not is_str: continue
                 if symbol.isdigit():
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
-                        tokens.append([VariableNameToken(var_name), False])
+                        if is_str:
+                            is_str = False
+                            tokens.append([StringToken(name), False])
+                        else:
+                            tokens.append([VariableNameToken(name), False])
 
                     if not last_symbol_is_digit:
                         number_str = ""
@@ -203,7 +215,11 @@ def run(text: str):
                         tokens.append([NumberToken(int(number_str)), False])
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
-                        tokens.append([VariableNameToken(var_name), False])
+                        if is_str:
+                            is_str = False
+                            tokens.append([StringToken(name), False])
+                        else:
+                            tokens.append([VariableNameToken(name), False])
 
                     if symbol == "+":
                         tokens.append([PlusToken(), False])
@@ -219,9 +235,13 @@ def run(text: str):
                         last_symbol_is_digit = False
                         tokens.append([NumberToken(int(number_str)), False])
 
+                    if symbol == "\"":
+                        is_str = True
+                        continue
+
                     if not last_symbol_is_letter:
-                        var_name = ""
-                    var_name += symbol
+                        name = ""
+                    name += symbol
                     last_symbol_is_letter = True
 
             if last_symbol_is_digit:
@@ -229,7 +249,14 @@ def run(text: str):
                 tokens.append([NumberToken(int(number_str)), False])
             if last_symbol_is_letter:
                 last_symbol_is_letter = False
-                tokens.append([VariableNameToken(var_name), False])
+                if is_str:
+                    is_str = False
+                    tokens.append([StringToken(name), False])
+                else:
+                    tokens.append([VariableNameToken(name), False])
+
+            if len(tokens) == 1 and isinstance(tokens[0][0], ValueToken):
+                last_value = tokens[0][0].value
 
             sign_tokens = []
             for i, [token, used] in enumerate(tokens):

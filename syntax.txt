@@ -27,3 +27,11 @@ else
   out
 end
 
+
+def str ss
+
+"Hello world!"
+set ss
+
+"Hello world!
+set ss
