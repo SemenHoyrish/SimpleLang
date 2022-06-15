@@ -1,12 +1,17 @@
 # TODO: tests! 
-# TODO: test if with strings
 # TODO: report error when try to access to undefined variable
+# TODO: add some debug features, like:
+#                                #dump_vars
+#                                #dump a
+
+# TODO: OR AND operations
+# TODO: LOOP
 
 import sys
 import functools
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-SIGNS = "+-/*="
+SIGNS = "+-/*=<>|&"
 
 def report_error(text: str):
     print("[ERROR] " + text)
@@ -146,7 +151,15 @@ class SignToken(Token):
             self.result = left_res / right_res
         if type(self) == EqualsEqualsToken:
             self.result = left_res == right_res
-            
+        if type(self) == LessToken:
+            self.result = left_res < right_res
+        if type(self) == BiggerToken:
+            self.result = left_res > right_res
+        if type(self) == AndToken:
+            self.result = left_res and right_res
+        if type(self) == OrToken:
+            self.result = left_res or right_res
+    
 
 class PlusToken(SignToken):
     def __init__(self):
@@ -163,17 +176,33 @@ class SlashToken(SignToken):
 class EqualsEqualsToken(SignToken):
     def __init__(self):
         super().__init__("==")
+class BiggerToken(SignToken):
+    def __init__(self):
+        super().__init__(">")
+class LessToken(SignToken):
+    def __init__(self):
+        super().__init__("<")
+class AndToken(SignToken):
+    def __init__(self):
+        super().__init__("&")
+class OrToken(SignToken):
+    def __init__(self):
+        super().__init__("|")
 
 signs_priority = {
-    StarToken: 2,
-    SlashToken: 2,
-    PlusToken: 1,
-    MinusToken: 1,
-    EqualsEqualsToken: 0,
+    StarToken: 3,
+    SlashToken: 3,
+    PlusToken: 2,
+    MinusToken: 2,
+    EqualsEqualsToken: 1,
+    BiggerToken: 1,
+    LessToken: 1,
+    AndToken: 0,
+    OrToken: 0
 }
 
 
-def run(text: str):
+def run(text: str, from_loop: bool = False):
     global last_value
     lines = text.split("\n")
 
@@ -182,8 +211,12 @@ def run(text: str):
     if_truth = []
     else_count = 0
     else_truth = []
+
+    # loop_count = 0
+    is_loop = False
+    loop = ""
     
-    for line in lines:
+    for line_index, line in enumerate(lines):
         raw_line = line
         line = line.strip()
 
@@ -196,9 +229,30 @@ def run(text: str):
         if line.startswith("//"):
             continue
 
+
+        elif line.strip() == "loop":
+            is_loop = True
+
+        
+        elif line.strip() == "endloop":
+            run(loop, True)
+            is_loop = False
+            # print("!!!!")
+            # print(loop)
+            # print("!!!!")
+            return
+        
+        elif is_loop:
+            loop += line + "\n"
+            continue
+
+        
             
         elif line.strip() == "if":
             # print("-> if")
+            # print(last_value.get_str())
+            # print(last_value.type)
+            # print(last_value.value)
             if last_value.type != Boolean:
                 report_error("Incorrect type for if statement!")
                 return
@@ -225,6 +279,22 @@ def run(text: str):
         elif else_count > 0 and else_count > if_count and else_truth[else_count - 1] == False:
             continue
 
+
+        elif line.strip() == "break":
+            loop += line + "\n"
+            if from_loop:
+                return
+
+        # elif line.strip() == "loop":
+        #     loop_count += 1
+        #     loops.append(line_index)
+        # elif line.strip() == "break":
+        #     loop_count -= 1
+        #     del loops[loop_count]
+        # elif line.strip() == "endloop":
+        #     line_index = loops[loop_count - 1]
+
+        
 
         elif line.startswith("def"):
             line = line.replace("def ", "")
@@ -325,9 +395,17 @@ def run(text: str):
                         tokens.append([StarToken(), False])
                     elif symbol == "/":
                         tokens.append([SlashToken(), False])
+                    elif symbol == "<":
+                        tokens.append([LessToken(), False])
+                    elif symbol == ">":
+                        tokens.append([BiggerToken(), False])
                     elif symbol == "=" and symbols[symbol_index + 1] == "=":
                         tokens.append([EqualsEqualsToken(), False])
                         skip = True
+                    elif symbol == "&":
+                        tokens.append([AndToken(), False])
+                    elif symbol == "|":
+                        tokens.append([OrToken(), False])
                 
                 else:
                     if last_symbol_is_digit:
@@ -419,6 +497,8 @@ def run(text: str):
                     last_value = Variable(Integer, token.result)
                 break          
 
+    if from_loop:
+        run(text, True)
 
 
 text = """

@@ -35,3 +35,15 @@ set ss
 
 "Hello world!
 set ss
+
+def int i
+loop
+  i > 9
+  if
+    break
+  else
+  endif
+  i + 1
+  set i
+endloop
+
