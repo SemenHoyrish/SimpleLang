@@ -4,8 +4,7 @@
 #                                #dump_vars
 #                                #dump a
 
-# TODO: OR AND operations
-# TODO: LOOP
+# TODO: functions
 
 import sys
 import functools
