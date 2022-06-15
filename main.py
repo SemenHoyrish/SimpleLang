@@ -148,7 +148,7 @@ class SignToken(Token):
         if type(self) == StarToken:
             self.result = left_res * right_res
         if type(self) == SlashToken:
-            self.result = left_res / right_res
+            self.result = left_res // right_res
         if type(self) == EqualsEqualsToken:
             self.result = left_res == right_res
         if type(self) == LessToken:
@@ -240,7 +240,6 @@ def run(text: str, from_loop: bool = False):
             # print("!!!!")
             # print(loop)
             # print("!!!!")
-            return
         
         elif is_loop:
             loop += line + "\n"
