@@ -4,7 +4,7 @@
 #                                #dump_vars
 #                                #dump a
 
-# TODO: functions
+# TODO: stdlib ? 
 
 import sys
 import functools
@@ -585,15 +585,21 @@ text = """
 
 # run(text)
 
-filename = "test.sl"
+filename = ""
 
 for arg in sys.argv:
     if arg.endswith(".sl"):
         filename = arg
 
+if filename == "":
+    print("No filename!")
+    sys.exit()
+
 f = open(filename, "r")
-run(f.read())
+text = f.read()
 f.close()
+run(text)
+
 
 
 # print(global_last_value.type)
