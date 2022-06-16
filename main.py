@@ -220,12 +220,17 @@ class Function:
     def execute(self, args):
         for i, arg in enumerate(args):
             self.variables[self.args[i][1]] = Variable(self.args[i][0], arg)
+        # print(variables)
+        # print(self.variables)
         v = variables.copy()
         v.update(self.variables)
         run(self.code, v, False, True)
 
 
 def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: bool = False):
+    # print("===START===")
+    # print(text, vars, from_loop, from_func, sep="\n===============\n")
+    # print("===END===\n\n\n")
     # global global_last_value
     global last_value
 
@@ -271,7 +276,6 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
         elif line.startswith("func"):
             is_func = True
             func_name = line.replace("func ", "").strip()
-            continue
 
         elif is_func and line.strip() == "args":
             is_args = True
@@ -292,11 +296,16 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
 
 
         elif line.strip() == "loop":
+            if is_func:
+                func += line + "\n"
             is_loop = True
 
         
         elif line.strip() == "endloop":
-            run(loop, True)
+            if is_func:
+                func += line + "\n"
+            if not is_func:
+                run(loop, vars, from_loop=True, from_func=from_func)
             is_loop = False
             # print("!!!!")
             # print(loop)
@@ -368,6 +377,9 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 if part_index == 0: continue
                 fargs.append(vars[part].value)
 
+            # print("[[FUNCTION CODE]]")
+            # print(functions[fname].code)
+            # print("[[FUNCTION CODE]]")
             functions[fname].execute(fargs)
 
         elif line.startswith("def"):
@@ -572,7 +584,7 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 break          
 
     if from_loop:
-        run(text, True)
+        run(text, vars, from_loop=True, from_func=from_func)
 
 
 text = """
@@ -598,7 +610,7 @@ if filename == "":
 f = open(filename, "r")
 text = f.read()
 f.close()
-run(text)
+run(text, variables, False, False)
 
 
 
