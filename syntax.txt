@@ -47,3 +47,17 @@ loop
   set i
 endloop
 
+
+func name
+  args
+    int a
+    int b
+  endargs
+  
+  def int c
+  a + b
+  set c
+
+  get c
+  return  
+endfunc

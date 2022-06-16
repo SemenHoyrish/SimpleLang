@@ -82,9 +82,11 @@ types = {
     "bool": Boolean,
 }
 
-vars = {}
+variables = {}
+functions = {}
 
 
+# global_last_value = Variable(Type, None)
 last_value = Variable(Type, None)
 
 
@@ -116,7 +118,7 @@ class SignToken(Token):
     left: Token = None
     right: Token = None
     result = None
-    def calc(self):
+    def calc(self, vars = variables):
         left_res = None
         right_res = None
 
@@ -127,7 +129,7 @@ class SignToken(Token):
             left_res = vars[self.left.value].value
         if isinstance(self.left, SignToken):
             if self.left.result == None:
-                self.left.calc()
+                self.left.calc(vars)
             left_res = self.left.result
 
 
@@ -137,7 +139,7 @@ class SignToken(Token):
             right_res = vars[self.right.value].value
         if isinstance(self.right, SignToken):
             if self.right.result == None:
-                self.right.calc()
+                self.right.calc(vars)
             right_res = self.right.result
 
         if type(self) == PlusToken:
@@ -200,9 +202,40 @@ signs_priority = {
     OrToken: 0
 }
 
+class Function:
+    args: dict = []
+    # [
+    #     (Integer, "a"),
+    #     (Integer, "b")
+    # ]
+    return_type: Type = Type
+    variables: list = {}
+    code: str = ""
 
-def run(text: str, from_loop: bool = False):
+    def __init__(self, args, code, return_type) -> None:
+        self.args = args
+        self.code = code
+        self.return_type = return_type
+
+    def execute(self, args):
+        for i, arg in enumerate(args):
+            self.variables[self.args[i][1]] = Variable(self.args[i][0], arg)
+        v = variables.copy()
+        v.update(self.variables)
+        run(self.code, v, False, True)
+
+
+def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: bool = False):
+    # global global_last_value
     global last_value
+
+    # if not from_func:
+    #     last_value = global_last_value
+    # else:
+    #     last_value = Variable(Type, None)
+    # last_value = global_last_value
+
+
     lines = text.split("\n")
 
 
@@ -214,6 +247,12 @@ def run(text: str, from_loop: bool = False):
     # loop_count = 0
     is_loop = False
     loop = ""
+
+    is_func = False
+    func_name = ""
+    func = ""
+    is_args = False
+    args = []
     
     for line_index, line in enumerate(lines):
         raw_line = line
@@ -229,6 +268,29 @@ def run(text: str, from_loop: bool = False):
             continue
 
 
+        elif line.startswith("func"):
+            is_func = True
+            func_name = line.replace("func ", "").strip()
+            continue
+
+        elif is_func and line.strip() == "args":
+            is_args = True
+            
+        elif is_func and line.strip() == "endargs":
+            is_args = False
+        
+        elif is_args:
+            t, n = line.strip().split(" ")
+            args.append( [types[t], n] )
+
+        elif line.strip() == "endfunc":
+            is_func = False
+            functions[func_name] = Function(args, func, Type)
+            func_name = ""
+            func = ""
+            args = []
+
+
         elif line.strip() == "loop":
             is_loop = True
 
@@ -240,8 +302,11 @@ def run(text: str, from_loop: bool = False):
             # print(loop)
             # print("!!!!")
         
-        elif is_loop:
-            loop += line + "\n"
+        elif is_loop or is_func:
+            if is_loop:
+                loop += line + "\n"
+            if is_func:
+                func += line + "\n"
             continue
 
         
@@ -292,7 +357,18 @@ def run(text: str, from_loop: bool = False):
         # elif line.strip() == "endloop":
         #     line_index = loops[loop_count - 1]
 
+        elif line.strip() == "return" and from_func:
+            global_last_value = last_value
         
+        elif line.startswith(">"):
+            parts = line.replace(">", "").strip().split(" ")
+            fname = parts[0]
+            fargs = []
+            for part_index, part in enumerate(parts):
+                if part_index == 0: continue
+                fargs.append(vars[part].value)
+
+            functions[fname].execute(fargs)
 
         elif line.startswith("def"):
             line = line.replace("def ", "")
@@ -488,7 +564,7 @@ def run(text: str, from_loop: bool = False):
 
             sign_tokens.reverse()
             for index, token in sign_tokens:
-                token.calc()
+                token.calc(vars)
                 if (token.result == True or token.result == False) and type(token.result) == type(True):
                     last_value = Variable(Boolean, token.result)
                 else:
@@ -517,8 +593,10 @@ for arg in sys.argv:
 
 f = open(filename, "r")
 run(f.read())
-# print(vars)
-# print(vars['a'].type)
-# print(vars['a'].value)
 f.close()
 
+
+# print(global_last_value.type)
+# print(global_last_value.value)
+# print(functions["name"].code)
+# print(functions["name"].execute())
