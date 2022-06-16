@@ -22,6 +22,7 @@ cp main.py ./build/main.py
 cd ./build
 # pyinstaller -F main.py -n sl.exe --paths "C:\Python310\Lib\site-packages" --hiddenimport websockets --hiddenimport websockets.legacy --hiddenimport websockets.legacy.server
 pyinstaller -F main.py -n sl.exe
+cp ./dist/sl.exe ../sl.exe
 
 echo "Enter for exit"
 read for_exit
