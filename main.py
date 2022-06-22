@@ -369,18 +369,18 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
         elif line.strip() == "return" and from_func:
             global_last_value = last_value
         
-        elif line.startswith(">"):
-            parts = line.replace(">", "").strip().split(" ")
-            fname = parts[0]
-            fargs = []
-            for part_index, part in enumerate(parts):
-                if part_index == 0: continue
-                fargs.append(vars[part].value)
+        # elif line.startswith(">"):
+        #     parts = line.replace(">", "").strip().split(" ")
+        #     fname = parts[0]
+        #     fargs = []
+        #     for part_index, part in enumerate(parts):
+        #         if part_index == 0: continue
+        #         fargs.append(vars[part].value)
 
-            # print("[[FUNCTION CODE]]")
-            # print(functions[fname].code)
-            # print("[[FUNCTION CODE]]")
-            functions[fname].execute(fargs)
+        #     # print("[[FUNCTION CODE]]")
+        #     # print(functions[fname].code)
+        #     # print("[[FUNCTION CODE]]")
+        #     functions[fname].execute(fargs)
 
         elif line.startswith("def"):
             line = line.replace("def ", "")
@@ -438,11 +438,29 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             name = ""
             last_symbol_is_letter = False
             skip = False
+            now_is_func = False
             for symbol_index, symbol in enumerate(symbols):
                 if skip:
                     skip = False
                     continue
+                if symbol == " " and now_is_func:
+                    if last_symbol_is_digit:
+                        last_symbol_is_digit = False
+                        tokens.append([NumberToken(int(number_str)), False])
+                    if last_symbol_is_letter:
+                        last_symbol_is_letter = False
+                        if name.lower() == "false" or name.lower() == "true":
+                            tokens.append([BooleanToken(name), False])
+                        elif is_str:
+                            is_str = False
+                            tokens.append([StringToken(name), False])
+                        else:
+                            tokens.append([VariableNameToken(name), False])
+                    continue
                 if symbol == " " and not is_str: continue
+                if symbol == ">":
+                    now_is_func = True
+                    continue
                 if symbol.isdigit() and not is_str:
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
@@ -528,6 +546,23 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                     last_value = Variable(String, tokens[0][0].value)
                 elif type(tokens[0][0]) == BooleanToken:
                     last_value = Variable(Boolean, tokens[0][0].value)
+
+            if now_is_func:
+                fname = ""
+                fargs = []
+                for i, [token, used] in enumerate(tokens):
+                    if i == 0:
+                        fname = token.value
+                        continue
+                    if isinstance(token, ValueToken):
+                        fargs.append(token.value)
+                    elif isinstance(token, VariableNameToken):
+                        fargs.append(vars[token.value].value)
+                # print("FNAME", fname)
+                # print("FARGS", fargs)
+                functions[fname].execute(fargs)
+                continue
+
 
             sign_tokens = []
             for i, [token, used] in enumerate(tokens):
