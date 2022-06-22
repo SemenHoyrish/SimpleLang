@@ -443,21 +443,21 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 if skip:
                     skip = False
                     continue
-                if symbol == " " and now_is_func:
-                    if last_symbol_is_digit:
-                        last_symbol_is_digit = False
-                        tokens.append([NumberToken(int(number_str)), False])
-                    if last_symbol_is_letter:
-                        last_symbol_is_letter = False
-                        if name.lower() == "false" or name.lower() == "true":
-                            tokens.append([BooleanToken(name), False])
-                        elif is_str:
-                            is_str = False
-                            tokens.append([StringToken(name), False])
-                        else:
-                            tokens.append([VariableNameToken(name), False])
+                if symbol == " " and not is_str:
+                    if now_is_func:
+                        if last_symbol_is_digit:
+                            last_symbol_is_digit = False
+                            tokens.append([NumberToken(int(number_str)), False])
+                        if last_symbol_is_letter:
+                            last_symbol_is_letter = False
+                            if name.lower() == "false" or name.lower() == "true":
+                                tokens.append([BooleanToken(name), False])
+                            elif is_str:
+                                is_str = False
+                                tokens.append([StringToken(name), False])
+                            else:
+                                tokens.append([VariableNameToken(name), False])
                     continue
-                if symbol == " " and not is_str: continue
                 if symbol == ">":
                     now_is_func = True
                     continue
@@ -517,7 +517,18 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                         tokens.append([NumberToken(int(number_str)), False])
 
                     if symbol == "\"":
-                        is_str = True
+                        if is_str:
+                            if last_symbol_is_letter:
+                                last_symbol_is_letter = False
+                            if name.lower() == "false" or name.lower() == "true":
+                                tokens.append([BooleanToken(name), False])
+                            elif is_str:
+                                is_str = False
+                                tokens.append([StringToken(name), False])
+                            else:
+                                tokens.append([VariableNameToken(name), False])
+                        else:
+                            is_str = True
                         continue
 
                     if not last_symbol_is_letter:
