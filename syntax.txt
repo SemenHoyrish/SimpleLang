@@ -61,3 +61,14 @@ func name
   get c
   return  
 endfunc
+
+def arr->int arr_a
+
+1
+add arr_a
+0
+read arr_a
+0
+rem arr_a
+
+len arr_a

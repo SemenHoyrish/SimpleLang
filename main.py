@@ -4,7 +4,10 @@
 #                                #dump_vars
 #                                #dump a
 
-# TODO: stdlib ? 
+# TODO: stdlib ?
+# TODO: imports | includes
+# TODO: str to arr
+# TODO: Interpreter command line args: --exit_on_error ...
 
 import sys
 import functools
@@ -30,6 +33,46 @@ class String(Type):
 class Boolean(Type):
     name: str = "boolean"
     default_value = False
+
+class ArrayValue:
+    value = []
+    type: Type = None
+    def __init__(self, type: Type) -> None:
+        self.type = type
+
+    def add_element(self, value) -> bool:
+        v = Variable(self.type)
+        if not v.parse_value(value):
+            return False
+        else:
+            self.value.append(value)
+
+    def get_element(self, index: int):
+        try:
+            return self.value[int(index)]
+        except:
+            report_error("Index out of range!")
+            return self.type.default_value
+
+    def remove_element(self, index: int):
+        try:
+            del self.value[int(index)]
+        except:
+            report_error("Index out of range!")
+
+
+class Array(Type):
+    name: str = "array"
+    default_value = ArrayValue(Type)
+
+class IntArray(Array):
+    default_value = ArrayValue(Integer)
+
+class StrArray(Array):
+    default_value = ArrayValue(String)
+
+class BoolArray(Array):
+    default_value = ArrayValue(Boolean)
 
 class Variable:
     type: Type = None
@@ -80,6 +123,9 @@ types = {
     "int": Integer,
     "str": String,
     "bool": Boolean,
+    "arr->int": IntArray,
+    "arr->str": StrArray,
+    "arr->bool": BoolArray,
 }
 
 variables = {}
@@ -227,7 +273,7 @@ class Function:
         run(self.code, v, False, True)
 
 
-def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: bool = False):
+def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: bool = False) -> dict:
     # print("===START===")
     # print(text, vars, from_loop, from_func, sep="\n===============\n")
     # print("===END===\n\n\n")
@@ -404,8 +450,13 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
 
             last_value = vars[n]
         
-        elif line.strip() == "out":
-            print(last_value.get_str().replace("\\n", "\n"), end="")
+        elif line.startswith("out"):
+            if line.strip() == "out":
+                print(last_value.get_str().replace("\\n", "\n"), end="")
+            elif line.strip() == "outn":
+                print(last_value.get_str().replace("\\n", "\n"), end="\n")
+            else:
+                report_error("Unexpected type of out command")
 
         elif line.startswith("set"):
             line = line.replace("set ", "")
@@ -427,6 +478,35 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 return
 
             last_value = vars[n]
+
+        elif line.startswith("add"):
+            parts = line.replace("add ", "").strip().split(" ")
+            arr_name = parts[0]
+            # value = parts[1]
+            value = last_value.value
+            vars[arr_name].value.add_element(value)
+
+        elif line.startswith("rem"):
+            parts = line.replace("rem ", "").strip().split(" ")
+            arr_name = parts[0]
+            # index = parts[1]
+            index = last_value.value
+            vars[arr_name].value.remove_element(index)
+
+        elif line.startswith("read"):
+            parts = line.replace("read ", "").strip().split(" ")
+            arr_name = parts[0]
+            # index = parts[1]
+            index = last_value.value
+            r = vars[arr_name].value.get_element(index)
+            last_value = Variable(vars[arr_name].value.type)
+            last_value.parse_value(r)
+
+        elif line.startswith("len"):
+            parts = line.replace("len ", "").strip().split(" ")
+            arr_name = parts[0]
+            last_value = Variable(Integer, len(vars[arr_name].value.value))
+
 
         else:
             symbols = list(raw_line)
@@ -631,6 +711,8 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
 
     if from_loop:
         run(text, vars, from_loop=True, from_func=from_func)
+
+    return vars
 
 
 text = """
