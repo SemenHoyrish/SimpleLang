@@ -591,7 +591,7 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                             else:
                                 tokens.append([VariableNameToken(name), False])
                     continue
-                if symbol == ">":
+                if symbol == ">" and not is_str:
                     now_is_func = True
                     continue
                 if symbol.isdigit() and not is_str:
