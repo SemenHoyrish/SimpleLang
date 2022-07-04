@@ -5,7 +5,6 @@
 #                                #dump a
 
 # TODO: stdlib ?
-# TODO: imports | includes
 # TODO: str to arr
 # TODO: Interpreter command line args: --exit_on_error ...
 
@@ -15,8 +14,14 @@ import functools
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SIGNS = "+-/*=<>|&"
 
+# Command line arguments
+lib_paths = [".\\"]
+exit_on_error = False
+
 def report_error(text: str):
     print("[ERROR] " + text)
+    if exit_on_error:
+        sys.exit(1)
 
 class Type:
     name: str = "type"
@@ -104,6 +109,17 @@ class Variable:
                 self.value = True
                 return True
             return False
+        elif isinstance(self.type(), Array):
+            # print("ST", self.type)
+            # print("SV", self.value)
+            # print("SV.type", self.value.type)
+            # print("V", value)
+            # print("V.type", value.type)
+            if self.value.type == value.type:
+                self.value = value
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -320,11 +336,17 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
 
         elif line.startswith("include"):
             name = line.replace("include ", "").strip()
-            try:
-                file = open(name + ".sl", "r")
-                content = file.read()
-                file.close()
-            except:
+            content = None
+            for p in lib_paths:
+                try:
+                    file = open(p + name + ".sl", "r")
+                    content = file.read()
+                    file.close()
+                    break
+                except:
+                    pass
+            
+            if content == None:
                 report_error("Unable to open file: " + name + ".sl")
                 return
 
@@ -519,6 +541,16 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             arr_name = parts[0]
             last_value = Variable(Integer, len(vars[arr_name].value.value))
 
+        elif line.strip() == "strtoarr":
+            # print(last_value)
+            # print(last_value.type)
+            # print(last_value.value)
+            if not last_value.type == String:
+                report_error("It is not a string!")
+            else:
+                l = list(last_value.value)
+                last_value = Variable(StrArray, ArrayValue(String))
+                last_value.value.value = l
 
         else:
             symbols = list(raw_line)
@@ -739,9 +771,17 @@ text = """
 
 filename = ""
 
-for arg in sys.argv:
+for i, arg in enumerate(sys.argv):
     if arg.endswith(".sl"):
         filename = arg
+    if arg == "--lib-paths":
+        for p in sys.argv[i + 1].split(";"):
+            lib_paths.append(p)
+    if arg == "--exit_on_error":
+        exit_on_error = True
+
+# print(lib_paths)
+
 
 if filename == "":
     print("No filename!")
