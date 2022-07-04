@@ -72,3 +72,26 @@ read arr_a
 rem arr_a
 
 len arr_a
+
+//main.sl
+include test1
+include test2
+
+hello N
+
+//test1.sl
+func hello
+  args
+    int n
+  endargs
+  loop 0..n
+  "hello"
+  outn
+endfunc
+
+//test2.sl
+def int N
+
+3
+set N
+//

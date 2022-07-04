@@ -318,6 +318,18 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
         if line.startswith("//"):
             continue
 
+        elif line.startswith("include"):
+            name = line.replace("include ", "").strip()
+            try:
+                file = open(name + ".sl", "r")
+                content = file.read()
+                file.close()
+            except:
+                report_error("Unable to open file: " + name + ".sl")
+                return
+
+            vars.update( run(content, {}, False, False) )
+
 
         elif line.startswith("func"):
             is_func = True
