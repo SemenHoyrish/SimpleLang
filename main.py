@@ -5,7 +5,6 @@
 #                                #dump a
 
 # TODO: stdlib ?
-# TODO: str to arr
 # TODO: Interpreter command line args: --exit_on_error ...
 
 import sys
@@ -551,6 +550,16 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 l = list(last_value.value)
                 last_value = Variable(StrArray, ArrayValue(String))
                 last_value.value.value = l
+        
+        elif line.strip() == "arrtostr":
+            # print(last_value)
+            # print(last_value.type)
+            # print(last_value.value)
+            if not last_value.type == StrArray:
+                report_error("It is not a string array!")
+            else:
+                l = "".join(last_value.value.value)
+                last_value = Variable(String, l)
 
         else:
             symbols = list(raw_line)
