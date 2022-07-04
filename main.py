@@ -70,12 +70,15 @@ class Array(Type):
     default_value = ArrayValue(Type)
 
 class IntArray(Array):
+    name: str = "array of int"
     default_value = ArrayValue(Integer)
 
 class StrArray(Array):
+    name: str = "array of str"
     default_value = ArrayValue(String)
 
 class BoolArray(Array):
+    name: str = "array of bool"
     default_value = ArrayValue(Boolean)
 
 class Variable:
@@ -701,7 +704,11 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                     if isinstance(token, ValueToken):
                         fargs.append(token.value)
                     elif isinstance(token, VariableNameToken):
-                        fargs.append(vars[token.value].value)
+                        if vars[token.value].type == functions[fname].args[i - 1][0]:
+                            fargs.append(vars[token.value].value)
+                        else:
+                            report_error("Incorrect type '" + vars[token.value].type.name + "' for function argument with type '" + functions[fname].args[i - 1][0].name + "'")
+                            return
                 # print("FNAME", fname)
                 # print("FARGS", fargs)
                 functions[fname].execute(fargs)
