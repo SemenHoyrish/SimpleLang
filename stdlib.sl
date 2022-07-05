@@ -221,3 +221,18 @@ func concat_strs
     return
 endfunc
 
+
+func random
+    args
+        int min
+        int max
+    endargs
+    $RANDOM min max
+    return
+endfunc
+
+func clear
+    args
+    endargs
+    $CLEAR
+endfunc

@@ -5,10 +5,16 @@
 #                                #dump a
 
 # TODO: stdlib ?
+# TODO: struct
+# TODO: int to str, str to int ...
+# TODO: Test & and |
+# TODO: Calculations in func args
 # TODO: Interpreter command line args: --exit_on_error ...
 
 import sys
 import functools
+import random
+import os
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SIGNS = "+-/*=<>|&"
@@ -563,6 +569,20 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             else:
                 l = "".join(last_value.value.value)
                 last_value = Variable(String, l)
+
+        elif line.startswith("$RANDOM"):
+            min_v = vars["min"].value
+            max_v = vars["max"].value
+            last_value = Variable(Integer, random.randint(min_v, max_v))
+
+        elif line.strip() == "$CLEAR":
+            os.system('cls' if os.name=='nt' else 'clear')
+
+        elif line.strip() == "#vars":
+            print("#DEBUG: Variables")
+            for name, var in vars.items():
+                print(f"Name: '{name}' Type; '{var.type.name}' Value: '{var.value}'")
+            print("#DEBUG END: Variables")
 
         else:
             symbols = list(raw_line)
