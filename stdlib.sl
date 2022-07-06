@@ -222,6 +222,93 @@ func concat_strs
 endfunc
 
 
+func reverse_str_array
+    args
+        arr->str array
+    endargs
+    
+    def arr->str result
+    def int array.len
+    len array
+    set array.len
+    array.len - 1
+    set array.len
+
+    def int i
+    loop
+        i < array.len + 1
+        if
+            array.len - i
+            read array
+            add result
+        else
+            break
+        endif
+        i + 1
+        set i
+    endloop
+    get result
+    return
+endfunc
+
+func reverse_int_array
+    args
+        arr->int array
+    endargs
+    
+    def arr->int result
+    def int array.len
+    len array
+    set array.len
+    array.len - 1
+    set array.len
+
+    def int i
+    loop
+        i < array.len + 1
+        if
+            array.len - i
+            read array
+            add result
+        else
+            break
+        endif
+        i + 1
+        set i
+    endloop
+    get result
+    return
+endfunc
+
+func reverse_bool_array
+    args
+        arr->bool array
+    endargs
+    
+    def arr->bool result
+    def int array.len
+    len array
+    set array.len
+    array.len - 1
+    set array.len
+
+    def int i
+    loop
+        i < array.len + 1
+        if
+            array.len - i
+            read array
+            add result
+        else
+            break
+        endif
+        i + 1
+        set i
+    endloop
+    get result
+    return
+endfunc
+
 func random
     args
         int min
@@ -387,3 +474,118 @@ func str_to_int
     return
 endfunc
 
+
+func int_to_str
+    args
+        int integer
+    endargs
+    def arr->str digits
+
+    def int n
+    loop
+        integer > 0
+        if
+            integer % 10
+            set n
+            n == 1
+            if
+                "1"
+                add digits
+            else   
+            endif
+            n == 2
+            if
+                "2"
+                add digits
+            else
+            endif
+            n == 3
+            if
+                "3"
+                add digits
+            else
+            endif
+            n == 4
+            if
+                "4"
+                add digits
+            else
+            endif
+            n == 5
+            if
+                "5"
+                add digits
+            else
+            endif
+            n == 6
+            if
+                "6"
+                add digits
+            else
+            endif
+            n == 7
+            if
+                "7"
+                add digits
+            else
+            endif
+            n == 8
+            if
+                "8"
+                add digits
+            else
+            endif
+            n == 9
+            if
+                "9"
+                add digits
+            else
+            endif
+            n == 0
+            if
+                "0"
+                add digits
+            else
+            endif
+
+            integer / 10
+            set integer
+        else
+            break
+        endif
+    endloop
+
+    >reverse_str_array digits
+    arrtostr
+    
+    return
+endfunc
+
+
+func bool_to_int
+    args
+        bool boolean
+    endargs
+   
+    get boolean
+    if
+        1
+    else
+        0
+    endif
+    return
+endfunc
+
+func bool_to_str
+    args
+        bool boolean
+    endargs
+   
+    get boolean
+    if
+        "true"
+    else
+        "false
+    endif
+    return
+endfunc
