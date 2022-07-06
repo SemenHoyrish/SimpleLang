@@ -194,7 +194,7 @@ class SignToken(Token):
         left_res = None
         right_res = None
 
-        if type(self.left) in [NumberToken, BooleanToken]:
+        if type(self.left) in [NumberToken, BooleanToken, StringToken]:
             left_res = self.left.value
         if type(self.left) == VariableNameToken:
             # print(vars)
@@ -205,7 +205,7 @@ class SignToken(Token):
             left_res = self.left.result
 
 
-        if type(self.right) in [NumberToken, BooleanToken]:
+        if type(self.right) in [NumberToken, BooleanToken, StringToken]:
             right_res = self.right.value
         if type(self.right) == VariableNameToken:
             right_res = vars[self.right.value].value
