@@ -6,6 +6,7 @@
 
 # TODO: stdlib ?
 # TODO: struct
+# TODO: negative integers
 # TODO: int to str, str to int ...
 # TODO: Type checking
 # TODO: Small docs in readme
@@ -23,7 +24,7 @@ SIGNS = "+-/*=<>|&"
 
 # Command line arguments
 lib_paths = [".\\"]
-exit_on_error = False
+exit_on_error = True
 
 def report_error(text: str):
     print("[ERROR] " + text)
@@ -190,6 +191,7 @@ class SignToken(Token):
     left: Token = None
     right: Token = None
     result = None
+    result_type: Type
     def calc(self, vars = variables):
         left_res = None
         right_res = None
@@ -216,22 +218,31 @@ class SignToken(Token):
 
         if type(self) == PlusToken:
             self.result = left_res + right_res
+            self.result_type = Integer
         if type(self) == MinusToken:
             self.result = left_res - right_res
+            self.result_type = Integer
         if type(self) == StarToken:
             self.result = left_res * right_res
+            self.result_type = Integer
         if type(self) == SlashToken:
             self.result = left_res // right_res
+            self.result_type = Integer
         if type(self) == EqualsEqualsToken:
             self.result = left_res == right_res
+            self.result_type = Boolean
         if type(self) == LessToken:
             self.result = left_res < right_res
+            self.result_type = Boolean
         if type(self) == BiggerToken:
             self.result = left_res > right_res
+            self.result_type = Boolean
         if type(self) == AndToken:
             self.result = left_res and right_res
+            self.result_type = Boolean
         if type(self) == OrToken:
             self.result = left_res or right_res
+            self.result_type = Boolean
     
 
 class PlusToken(SignToken):
@@ -458,6 +469,9 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
 
         elif line.strip() == "return" and from_func:
             global_last_value = last_value
+            # print("LASTVALUE: ", last_value.value)
+            # return vars
+            
         
         # elif line.startswith(">"):
         #     parts = line.replace(">", "").strip().split(" ")
@@ -580,6 +594,9 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
         elif line.strip() == "$CLEAR":
             os.system('cls' if os.name=='nt' else 'clear')
 
+        elif line.strip() == "$ERROR":
+            report_error(vars["message"].value)
+
         elif line.strip() == "#vars":
             print("#DEBUG: Variables")
             for name, var in vars.items():
@@ -597,6 +614,7 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             last_symbol_is_letter = False
             skip = False
             now_is_func = False
+            first_sym = True
             for symbol_index, symbol in enumerate(symbols):
                 if skip:
                     skip = False
@@ -616,9 +634,10 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                             else:
                                 tokens.append([VariableNameToken(name), False])
                     continue
-                if symbol == ">" and not is_str:
+                if symbol == ">" and not is_str and first_sym:
                     now_is_func = True
                     continue
+                first_sym = False
                 if symbol.isdigit() and not is_str:
                     if last_symbol_is_letter:
                         last_symbol_is_letter = False
@@ -788,14 +807,21 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             sign_tokens.reverse()
             for index, token in sign_tokens:
                 token.calc(vars)
-                if (token.result == True or token.result == False) and type(token.result) == type(True):
-                    last_value = Variable(Boolean, token.result)
-                else:
-                    last_value = Variable(Integer, token.result)
+                # print("RESULT: ", token.result)
+                # if (token.result == True or token.result == False) and type(token.result) == type(True):
+                #     last_value = Variable(Boolean, token.result)
+                # else:
+                #     last_value = Variable(Integer, token.result)
+                last_value = Variable(token.result_type, token.result)
                 break          
 
     if from_loop:
         run(text, vars, from_loop=True, from_func=from_func)
+
+    # print("FUNC[str_to_int]")
+    # print(functions["str_to_int"].code)
+    # print("FUNC[str_to_int] END")
+    # exit()
 
     return vars
 
@@ -818,8 +844,8 @@ for i, arg in enumerate(sys.argv):
     if arg == "--lib-paths":
         for p in sys.argv[i + 1].split(";"):
             lib_paths.append(p)
-    if arg == "--exit_on_error":
-        exit_on_error = True
+    if arg == "--not-exit-on-error":
+        exit_on_error = False
 
 # print(lib_paths)
 
