@@ -9,6 +9,7 @@
 # TODO: negative integers
 # TODO: int to str, str to int ...
 # TODO: Type checking
+# TODO: Func return type
 # TODO: Small docs in readme
 # TODO: Calculations in func args
 # TODO: Interpreter command line args: --exit_on_error ...
@@ -20,7 +21,7 @@ import random
 import os
 
 LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-SIGNS = "+-/*=<>|&"
+SIGNS = "+-/*%=<>|&"
 
 # Command line arguments
 lib_paths = [".\\"]
@@ -52,6 +53,7 @@ class ArrayValue:
     type: Type = None
     def __init__(self, type: Type) -> None:
         self.type = type
+        self.value = []
 
     def add_element(self, value) -> bool:
         v = Variable(self.type)
@@ -77,6 +79,8 @@ class ArrayValue:
 class Array(Type):
     name: str = "array"
     default_value = ArrayValue(Type)
+    def __init__(self) -> None:
+        self.default_value = ArrayValue(self.default_value.type)
 
 class IntArray(Array):
     name: str = "array of int"
@@ -97,7 +101,7 @@ class Variable:
     def __init__(self, type: Type, value=None) -> None:
         self.type = type
         if value == None:
-            self.value = self.type.default_value
+            self.value = self.type().default_value
         else:
             self.value = value
     
@@ -228,6 +232,9 @@ class SignToken(Token):
         if type(self) == SlashToken:
             self.result = left_res // right_res
             self.result_type = Integer
+        if type(self) == PercentToken:
+            self.result = left_res % right_res
+            self.result_type = Integer
         if type(self) == EqualsEqualsToken:
             self.result = left_res == right_res
             self.result_type = Boolean
@@ -257,6 +264,9 @@ class StarToken(SignToken):
 class SlashToken(SignToken):
     def __init__(self):
         super().__init__("/")
+class PercentToken(SignToken):
+    def __init__(self):
+        super().__init__("%")
 class EqualsEqualsToken(SignToken):
     def __init__(self):
         super().__init__("==")
@@ -276,6 +286,7 @@ class OrToken(SignToken):
 signs_priority = {
     StarToken: 3,
     SlashToken: 3,
+    PercentToken: 3,
     PlusToken: 2,
     MinusToken: 2,
     EqualsEqualsToken: 1,
@@ -486,18 +497,18 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
         #     # print("[[FUNCTION CODE]]")
         #     functions[fname].execute(fargs)
 
-        elif line.startswith("def"):
+        elif line.startswith("def "):
             line = line.replace("def ", "")
             t, n = line.split(" ")
             t = t.strip()
             n = n.strip()
             vars[n] = Variable(types[t])
         
-        elif line.startswith("in"):
+        elif line.startswith("in "):
             line = line.replace("in ", "")
             n = line.strip()
             if n not in vars.keys():
-                report_error("Indefined variable")
+                report_error("Indefined variable [in]")
                 return
             
             inp = input()
@@ -516,11 +527,11 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             else:
                 report_error("Unexpected type of out command")
 
-        elif line.startswith("set"):
+        elif line.startswith("set "):
             line = line.replace("set ", "")
             n = line.strip()
             if n not in vars.keys():
-                report_error("Indefined variable")
+                report_error("Indefined variable [set]")
                 return
 
             r = vars[n].parse_value(last_value.value)
@@ -528,30 +539,30 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 report_error("??")
                 return
 
-        elif line.startswith("get"):
+        elif line.startswith("get "):
             line = line.replace("get ", "")
             n = line.strip()
             if n not in vars.keys():
-                report_error("Indefined variable")
+                report_error("Indefined variable [get]")
                 return
 
             last_value = vars[n]
 
-        elif line.startswith("add"):
+        elif line.startswith("add "):
             parts = line.replace("add ", "").strip().split(" ")
             arr_name = parts[0]
             # value = parts[1]
             value = last_value.value
             vars[arr_name].value.add_element(value)
 
-        elif line.startswith("rem"):
+        elif line.startswith("rem "):
             parts = line.replace("rem ", "").strip().split(" ")
             arr_name = parts[0]
             # index = parts[1]
             index = last_value.value
             vars[arr_name].value.remove_element(index)
 
-        elif line.startswith("read"):
+        elif line.startswith("read "):
             parts = line.replace("read ", "").strip().split(" ")
             arr_name = parts[0]
             # index = parts[1]
@@ -560,7 +571,7 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
             last_value = Variable(vars[arr_name].value.type)
             last_value.parse_value(r)
 
-        elif line.startswith("len"):
+        elif line.startswith("len "):
             parts = line.replace("len ", "").strip().split(" ")
             arr_name = parts[0]
             last_value = Variable(Integer, len(vars[arr_name].value.value))
@@ -676,6 +687,8 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                         tokens.append([StarToken(), False])
                     elif symbol == "/":
                         tokens.append([SlashToken(), False])
+                    elif symbol == "%":
+                        tokens.append([PercentToken(), False])
                     elif symbol == "<":
                         tokens.append([LessToken(), False])
                     elif symbol == ">":
