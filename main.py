@@ -7,9 +7,11 @@
 # TODO: stdlib ?
 # TODO: struct
 # TODO: int to str, str to int ...
-# TODO: Test & and |
+# TODO: Type checking
+# TODO: Small docs in readme
 # TODO: Calculations in func args
 # TODO: Interpreter command line args: --exit_on_error ...
+# TODO: Separate token parsing, evaluating ...
 
 import sys
 import functools
@@ -192,7 +194,7 @@ class SignToken(Token):
         left_res = None
         right_res = None
 
-        if type(self.left) == NumberToken:
+        if type(self.left) in [NumberToken, BooleanToken]:
             left_res = self.left.value
         if type(self.left) == VariableNameToken:
             # print(vars)
@@ -203,7 +205,7 @@ class SignToken(Token):
             left_res = self.left.result
 
 
-        if type(self.right) == NumberToken:
+        if type(self.right) in [NumberToken, BooleanToken]:
             right_res = self.right.value
         if type(self.right) == VariableNameToken:
             right_res = vars[self.right.value].value
@@ -746,6 +748,7 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 return signs_priority[type(a[1])] - signs_priority[type(b[1])]
 
             sign_tokens.sort(key=functools.cmp_to_key(compare), reverse=True)
+            # print(tokens)
             for index, token in sign_tokens:
                 # print(tokens)
                 if not tokens[index - 1][1]:
@@ -773,12 +776,14 @@ def run(text: str, vars: dict = variables, from_loop: bool = False, from_func: b
                 # print(signs_priority[type(token)], end="  ")
                 # print()
 
+            # print("SIGN TOKENS: ")
             # for index, token in sign_tokens:
             #     print(index)
             #     print(token.value)
             #     print(token.left, token.left.value)
             #     print(token.right, token.right.value)
             #     print()
+            # print("SIGN TOKENS END")
 
             sign_tokens.reverse()
             for index, token in sign_tokens:
