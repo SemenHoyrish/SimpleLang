@@ -17,6 +17,6 @@ set d
 
 
 get c
-out
+outn
 get d
-out
+outn
